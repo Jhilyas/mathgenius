@@ -1,17 +1,51 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // OpenRouter API Configuration
-const OPENROUTER_API_KEY = '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';
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const MODEL = 'google/gemma-3-27b-it';
 const MAX_TOKENS = 1024;
 
+// ── Middleware ──
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+
+// Security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
+
+// CORS for production
+app.use((req, res, next) => {
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    process.env.APP_URL
+  ].filter(Boolean);
+  
+  const origin = req.headers.origin;
+  if (!origin || allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  }
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
+// Serve static files with caching
+app.use(express.static(path.join(__dirname, 'public'), {
+  maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
+  etag: true
+}));
 
 // System prompts per education level
 const SYSTEM_PROMPTS = {
@@ -35,8 +69,12 @@ Explain underlying concepts and theorems. Provide multiple solution approaches w
 Respond in the same language as the student's message.`
 };
 
-// Chat endpoint - proxies to Poe API
+// ── Chat endpoint — streams AI responses via SSE ──
 app.post('/api/chat', async (req, res) => {
+  if (!OPENROUTER_API_KEY) {
+    return res.status(500).json({ error: 'Server misconfigured: missing API key' });
+  }
+
   try {
     const { messages, level = 'college' } = req.body;
 
@@ -46,46 +84,36 @@ app.post('/api/chat', async (req, res) => {
 
     const systemPrompt = SYSTEM_PROMPTS[level] || SYSTEM_PROMPTS.college;
 
-    // Gemma 3 does not support 'system' roles, so we prepend the instructions to the first message.
-    const apiMessages = messages.slice(-10); // Keep last 10 messages
+    const apiMessages = messages.slice(-10);
     if (apiMessages.length > 0 && apiMessages[0].role === 'user') {
       apiMessages[0].content = `${systemPrompt}\n\nUser Question:\n${apiMessages[0].content}`;
     } else if (apiMessages.length > 0) {
       apiMessages.unshift({ role: 'user', content: systemPrompt });
     }
 
-    console.log('[Chat] Sending request to OpenRouter API, model:', MODEL, 'level:', level);
+    console.log('[Chat] Request → model:', MODEL, 'level:', level);
 
-    // First try streaming
-    let response;
-    try {
-      response = await fetch(OPENROUTER_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-          'HTTP-Referer': 'http://localhost:3000',
-          'X-Title': 'MathGenius'
-        },
-        body: JSON.stringify({
-          model: MODEL,
-          messages: apiMessages,
-          max_tokens: MAX_TOKENS,
-          temperature: 0.7,
-          stream: true
-        })
-      });
-    } catch (fetchErr) {
-      console.error('[Chat] Fetch failed:', fetchErr.message);
-      return res.status(502).json({ error: 'Could not reach AI service', details: fetchErr.message });
-    }
-
-    console.log('[Chat] OpenRouter API status:', response.status);
+    const response = await fetch(OPENROUTER_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'HTTP-Referer': process.env.APP_URL || 'http://localhost:3000',
+        'X-Title': 'MathGenius'
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages: apiMessages,
+        max_tokens: MAX_TOKENS,
+        temperature: 0.7,
+        stream: true
+      })
+    });
 
     if (!response.ok) {
       let errText = '';
       try { errText = await response.text(); } catch {}
-      console.error('[Chat] OpenRouter API error:', response.status, errText);
+      console.error('[Chat] API error:', response.status, errText);
       return res.status(response.status).json({ 
         error: 'AI service error', 
         status: response.status,
@@ -93,12 +121,11 @@ app.post('/api/chat', async (req, res) => {
       });
     }
 
-    // Stream the response via SSE by piping the response body
+    // Stream SSE
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    // Use Node.js stream pipeline
     try {
       for await (const chunk of response.body) {
         res.write(chunk);
@@ -111,15 +138,19 @@ app.post('/api/chat', async (req, res) => {
     res.end();
 
   } catch (error) {
-    console.error('[Chat] Unexpected error:', error);
+    console.error('[Chat] Error:', error.message);
     if (!res.headersSent) {
-      res.status(500).json({ error: 'Internal server error', details: error.message });
+      res.status(500).json({ error: 'Internal server error' });
     }
   }
 });
 
-// Quiz generation endpoint
+// ── Quiz generation endpoint ──
 app.post('/api/quiz', async (req, res) => {
+  if (!OPENROUTER_API_KEY) {
+    return res.status(500).json({ error: 'Server misconfigured: missing API key' });
+  }
+
   try {
     const { level = 'college', topic = 'general', language = 'fr', count = 5 } = req.body;
 
@@ -137,7 +168,7 @@ Respond ONLY with valid JSON, no additional text. Language: ${language === 'fr' 
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'HTTP-Referer': 'http://localhost:3000',
+        'HTTP-Referer': process.env.APP_URL || 'http://localhost:3000',
         'X-Title': 'MathGenius'
       },
       body: JSON.stringify({
@@ -157,7 +188,6 @@ Respond ONLY with valid JSON, no additional text. Language: ${language === 'fr' 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || '[]';
     
-    // Try to extract JSON from the response
     let quiz;
     try {
       const jsonMatch = content.match(/\[[\s\S]*\]/);
@@ -169,12 +199,28 @@ Respond ONLY with valid JSON, no additional text. Language: ${language === 'fr' 
     res.json({ quiz });
 
   } catch (error) {
-    console.error('Quiz API error:', error);
+    console.error('[Quiz] Error:', error.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-app.listen(PORT, () => {
+// ── Health check for hosting platforms ──
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    version: '1.0.0'
+  });
+});
+
+// ── SPA fallback — serve index.html for any unmatched route ──
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// ── Start server ──
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`\n  🧮 MathGenius is running!`);
-  console.log(`  📚 Open http://localhost:${PORT}\n`);
+  console.log(`  📚 Open http://localhost:${PORT}`);
+  console.log(`  🌍 Environment: ${process.env.NODE_ENV || 'development'}\n`);
 });
