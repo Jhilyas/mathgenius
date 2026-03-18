@@ -1,0 +1,16 @@
+[build]
+  command = "npm install"
+  publish = "public"
+  functions = "functions"
+
+# Map all /api/* requests to the express serverless function
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/server/:splat"
+  status = 200
+
+# React-style SPA routing (serve index.html for all other paths)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
