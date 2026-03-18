@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MathGenius — Plateforme éducative avancée pour les mathématiques avec tuteur IA, calculatrice, traceur de graphes et bien plus.">
+  <title>MathGenius — Plateforme Math Éducative</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- @callstack/liquid-glass SVG Filter -->
+  <svg style="display:none" aria-hidden="true">
+    <filter id="glass-distortion" x="0%" y="0%" width="100%" height="100%" filterUnits="objectBoundingBox">
+      <feTurbulence type="fractalNoise" baseFrequency="0.001 0.005" numOctaves="1" seed="17" result="turbulence"/>
+      <feComponentTransfer in="turbulence" result="mapped">
+        <feFuncR type="gamma" amplitude="1" exponent="10" offset="0.5"/>
+        <feFuncG type="gamma" amplitude="0" exponent="1" offset="0"/>
+        <feFuncB type="gamma" amplitude="0" exponent="1" offset="0.5"/>
+      </feComponentTransfer>
+      <feGaussianBlur in="turbulence" stdDeviation="3" result="softMap"/>
+      <feSpecularLighting in="softMap" surfaceScale="5" specularConstant="1" specularExponent="100" lighting-color="white" result="specLight">
+        <fePointLight x="-200" y="-200" z="300"/>
+      </feSpecularLighting>
+      <feComposite in="specLight" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="litImage"/>
+      <feDisplacementMap in="SourceGraphic" in2="softMap" scale="200" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </svg>
+
+  <!-- We will use a CSS background image on body instead of an animated div -->
+
+  <!-- Floating Math Symbols Background -->
+  <div class="floating-symbols" id="floatingSymbols" aria-hidden="true"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 40 40" fill="none">
+            <rect x="2" y="2" width="36" height="36" rx="8" stroke="currentColor" stroke-width="2.5"/>
+            <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="currentColor" font-size="20" font-weight="800">π</text>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <h1>MathGenius</h1>
+          <span class="logo-subtitle" data-i18n="logoSubtitle">Plateforme Éducative</span>
+        </div>
+      </div>
+      <button class="sidebar-close" id="sidebarClose" aria-label="Fermer">✕</button>
+    </div>
+
+    <!-- Level Selector -->
+    <div class="sidebar-section">
+      <h3 class="sidebar-label" data-i18n="levelLabel">Niveau</h3>
+      <div class="level-selector">
+        <button class="level-btn" data-level="primary" id="levelPrimary">
+          <span class="level-icon">🎒</span>
+          <span data-i18n="levelPrimary">Primaire</span>
+        </button>
+        <button class="level-btn active" data-level="college" id="levelCollege">
+          <span class="level-icon">📓</span>
+          <span data-i18n="levelCollege">Collège</span>
+        </button>
+        <button class="level-btn" data-level="lycee" id="levelLycee">
+          <span class="level-icon">🎓</span>
+          <span data-i18n="levelLycee">Lycée</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Language Selector -->
+    <div class="sidebar-section">
+      <h3 class="sidebar-label" data-i18n="languageLabel">Langue</h3>
+      <div class="language-selector">
+        <button class="lang-btn active" data-lang="fr" title="Français">🇫🇷 FR</button>
+        <button class="lang-btn" data-lang="en" title="English">🇬🇧 EN</button>
+        <button class="lang-btn" data-lang="ar" title="العربية">🇸🇦 AR</button>
+        <button class="lang-btn" data-lang="es" title="Español">🇪🇸 ES</button>
+      </div>
+    </div>
+
+    <!-- Tool Navigation -->
+    <div class="sidebar-section">
+      <h3 class="sidebar-label" data-i18n="toolsLabel">Outils</h3>
+      <nav class="tool-nav">
+        <button class="tool-btn active" data-tool="ai-tutor" id="toolAI">
+          <span class="tool-icon">🤖</span>
+          <span data-i18n="toolAI">Tuteur IA</span>
+          <span class="tool-badge" data-i18n="toolAIBadge">Google Gemma 3</span>
+        </button>
+        <button class="tool-btn" data-tool="calculator" id="toolCalc">
+          <span class="tool-icon">🧮</span>
+          <span data-i18n="toolCalc">Calculatrice</span>
+        </button>
+        <button class="tool-btn" data-tool="geometry" id="toolGeo">
+          <span class="tool-icon">📐</span>
+          <span data-i18n="toolGeo">Géométrie</span>
+        </button>
+        <button class="tool-btn" data-tool="graphing" id="toolGraph">
+          <span class="tool-icon">📊</span>
+          <span data-i18n="toolGraph">Graphique</span>
+        </button>
+        <button class="tool-btn" data-tool="equations" id="toolEq">
+          <span class="tool-icon">🔢</span>
+          <span data-i18n="toolEq">Équations</span>
+        </button>
+        <button class="tool-btn" data-tool="formulas" id="toolFormulas">
+          <span class="tool-icon">📖</span>
+          <span data-i18n="toolFormulas">Formules</span>
+        </button>
+        <button class="tool-btn" data-tool="quiz" id="toolQuiz">
+          <span class="tool-icon">📝</span>
+          <span data-i18n="toolQuiz">Quiz</span>
+        </button>
+        <button class="tool-btn" data-tool="converter" id="toolConv">
+          <span class="tool-icon">⚖️</span>
+          <span data-i18n="toolConv">Convertisseur</span>
+        </button>
+      </nav>
+    </div>
+
+    <div class="sidebar-footer">
+      <p class="powered-by">Powered by <strong>Google Gemma 3</strong></p>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content" id="mainContent">
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+      <button class="hamburger" id="hamburgerBtn" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+      <h2 class="mobile-title">MathGenius</h2>
+      <div class="header-level-badge" id="headerLevelBadge" data-i18n="levelCollege">Collège</div>
+    </header>
+
+    <!-- Tool Panels -->
+    <!-- AI Tutor Panel -->
+    <section class="tool-panel active" id="panel-ai-tutor">
+      <div class="panel-header">
+        <div class="panel-title-group">
+          <h2 data-i18n="aiTutorTitle">Tuteur IA Mathématiques</h2>
+          <p class="panel-subtitle" data-i18n="aiTutorSubtitle">Posez n'importe quelle question — explications pas à pas</p>
+        </div>
+        <div class="ai-status">
+          <span class="status-dot"></span>
+          <span data-i18n="aiOnline">En ligne</span>
+        </div>
+        <button class="chat-clear-btn" id="chatClearBtn" onclick="AITutor.clearHistory()" title="Effacer l'historique">🗑️</button>
+      </div>
+      <div class="chat-container" id="chatContainer">
+        <div class="chat-messages" id="chatMessages">
+          <div class="chat-welcome">
+            <div class="welcome-icon">🧠</div>
+            <h3 data-i18n="chatWelcomeTitle">Bienvenue sur MathGenius !</h3>
+            <p data-i18n="chatWelcomeText">Je suis votre tuteur IA. Posez-moi n'importe quelle question de mathématiques et je vous expliquerai pas à pas.</p>
+            <div class="quick-prompts">
+              <button class="quick-prompt" data-prompt="Explique-moi le théorème de Pythagore" data-i18n="quickPrompt1">Théorème de Pythagore</button>
+              <button class="quick-prompt" data-prompt="Comment résoudre une équation du second degré ?" data-i18n="quickPrompt2">Équation du 2nd degré</button>
+              <button class="quick-prompt" data-prompt="Quelles sont les propriétés des fractions ?" data-i18n="quickPrompt3">Propriétés des fractions</button>
+              <button class="quick-prompt" data-prompt="Explique-moi les dérivées" data-i18n="quickPrompt4">Les dérivées</button>
+            </div>
+          </div>
+        </div>
+        <div class="chat-input-area">
+          <div class="chat-input-wrapper">
+            <textarea id="chatInput" placeholder="Posez votre question de maths..." data-i18n-placeholder="chatInputPlaceholder" rows="1"></textarea>
+            <button class="send-btn" id="sendBtn" aria-label="Envoyer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </div>
+          <p class="chat-disclaimer" data-i18n="chatDisclaimer">Google Gemma 3 • Vérifiez toujours les réponses</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Calculator Panel -->
+    <section class="tool-panel" id="panel-calculator">
+      <div class="panel-header">
+        <h2 data-i18n="calcTitle">Calculatrice Scientifique</h2>
+        <p class="panel-subtitle" data-i18n="calcSubtitle">Calculatrice avancée avec historique</p>
+      </div>
+      <div class="calculator-container">
+        <div class="calc-display">
+          <div class="calc-history" id="calcHistory"></div>
+          <div class="calc-expression" id="calcExpression">0</div>
+        </div>
+        <div class="calc-buttons">
+          <button class="calc-btn func" data-action="clear">AC</button>
+          <button class="calc-btn func" data-action="backspace">⌫</button>
+          <button class="calc-btn func" data-action="percent">%</button>
+          <button class="calc-btn op" data-action="/">÷</button>
+
+          <button class="calc-btn sci" data-action="sin">sin</button>
+          <button class="calc-btn sci" data-action="cos">cos</button>
+          <button class="calc-btn sci" data-action="tan">tan</button>
+          <button class="calc-btn op" data-action="*">×</button>
+
+          <button class="calc-btn sci" data-action="sqrt">√</button>
+          <button class="calc-btn sci" data-action="pow">x²</button>
+          <button class="calc-btn sci" data-action="log">log</button>
+          <button class="calc-btn op" data-action="-">−</button>
+
+          <button class="calc-btn sci" data-action="ln">ln</button>
+          <button class="calc-btn sci" data-action="pi">π</button>
+          <button class="calc-btn sci" data-action="e">e</button>
+          <button class="calc-btn op" data-action="+">+</button>
+
+          <button class="calc-btn num" data-action="7">7</button>
+          <button class="calc-btn num" data-action="8">8</button>
+          <button class="calc-btn num" data-action="9">9</button>
+          <button class="calc-btn paren" data-action="(">(</button>
+
+          <button class="calc-btn num" data-action="4">4</button>
+          <button class="calc-btn num" data-action="5">5</button>
+          <button class="calc-btn num" data-action="6">6</button>
+          <button class="calc-btn paren" data-action=")">)</button>
+
+          <button class="calc-btn num" data-action="1">1</button>
+          <button class="calc-btn num" data-action="2">2</button>
+          <button class="calc-btn num" data-action="3">3</button>
+          <button class="calc-btn equals" data-action="=" rowspan="2">=</button>
+
+          <button class="calc-btn num zero" data-action="0">0</button>
+          <button class="calc-btn num" data-action=".">.</button>
+          <button class="calc-btn sci" data-action="abs">|x|</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Geometry Panel -->
+    <section class="tool-panel" id="panel-geometry">
+      <div class="panel-header">
+        <h2 data-i18n="geoTitle">Géométrie Interactive</h2>
+        <p class="panel-subtitle" data-i18n="geoSubtitle">Dessinez et mesurez des formes</p>
+      </div>
+      <div class="geometry-container">
+        <div class="geo-toolbar">
+          <button class="geo-tool-btn active" data-shape="rectangle" title="Rectangle">▭</button>
+          <button class="geo-tool-btn" data-shape="circle" title="Circle">○</button>
+          <button class="geo-tool-btn" data-shape="triangle" title="Triangle">△</button>
+          <button class="geo-tool-btn" data-shape="line" title="Line">╲</button>
+          <button class="geo-tool-btn" id="geoClearBtn" title="Clear">🗑️</button>
+        </div>
+        <div class="geo-canvas-wrapper">
+          <canvas id="geoCanvas" width="800" height="500"></canvas>
+        </div>
+        <div class="geo-info" id="geoInfo">
+          <div class="geo-info-card">
+            <h4 data-i18n="geoInfoTitle">Mesures</h4>
+            <div id="geoMeasurements">
+              <p class="geo-placeholder" data-i18n="geoPlaceholder">Dessinez une forme pour voir ses mesures</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Graphing Panel -->
+    <section class="tool-panel" id="panel-graphing">
+      <div class="panel-header">
+        <h2 data-i18n="graphTitle">Traceur de Graphiques</h2>
+        <p class="panel-subtitle" data-i18n="graphSubtitle">Visualisez des fonctions mathématiques</p>
+      </div>
+      <div class="graphing-container">
+        <div class="graph-controls">
+          <div class="graph-input-group">
+            <label data-i18n="graphFunctionLabel">f(x) =</label>
+            <input type="text" id="graphFunctionInput" value="sin(x)" placeholder="ex: x^2, sin(x), 2*x+1">
+            <button class="graph-plot-btn" id="graphPlotBtn" data-i18n="graphPlotBtn">Tracer</button>
+          </div>
+          <div class="graph-presets">
+            <button class="graph-preset" data-fn="x^2" data-i18n="graphPreset1">x²</button>
+            <button class="graph-preset" data-fn="sin(x)" data-i18n="graphPreset2">sin(x)</button>
+            <button class="graph-preset" data-fn="cos(x)" data-i18n="graphPreset3">cos(x)</button>
+            <button class="graph-preset" data-fn="tan(x)" data-i18n="graphPreset4">tan(x)</button>
+            <button class="graph-preset" data-fn="log(x)" data-i18n="graphPreset5">log(x)</button>
+            <button class="graph-preset" data-fn="2^x" data-i18n="graphPreset6">2ˣ</button>
+            <button class="graph-preset" data-fn="1/x" data-i18n="graphPreset7">1/x</button>
+            <button class="graph-preset" data-fn="sqrt(x)" data-i18n="graphPreset8">√x</button>
+          </div>
+        </div>
+        <div class="graph-canvas-wrapper">
+          <canvas id="graphCanvas" width="800" height="500"></canvas>
+        </div>
+        <div class="graph-info" id="graphInfo">
+          <span id="graphCoords">x: 0, y: 0</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Equation Solver Panel -->
+    <section class="tool-panel" id="panel-equations">
+      <div class="panel-header">
+        <h2 data-i18n="eqTitle">Résolveur d'Équations</h2>
+        <p class="panel-subtitle" data-i18n="eqSubtitle">Solutions pas à pas</p>
+      </div>
+      <div class="equations-container">
+        <div class="eq-type-selector">
+          <button class="eq-type-btn active" data-type="linear" data-i18n="eqLinear">Linéaire</button>
+          <button class="eq-type-btn" data-type="quadratic" data-i18n="eqQuadratic">Quadratique</button>
+          <button class="eq-type-btn" data-type="system" data-i18n="eqSystem">Système 2×2</button>
+        </div>
+
+        <!-- Linear: ax + b = 0 -->
+        <div class="eq-form active" id="eqFormLinear">
+          <div class="eq-display">
+            <span class="eq-coeff-group">
+              <input type="number" id="linA" class="eq-input" value="2" step="any"> x +
+              <input type="number" id="linB" class="eq-input" value="-6" step="any"> = 0
+            </span>
+          </div>
+        </div>
+
+        <!-- Quadratic: ax² + bx + c = 0 -->
+        <div class="eq-form" id="eqFormQuadratic">
+          <div class="eq-display">
+            <span class="eq-coeff-group">
+              <input type="number" id="quadA" class="eq-input" value="1" step="any"> x² +
+              <input type="number" id="quadB" class="eq-input" value="-5" step="any"> x +
+              <input type="number" id="quadC" class="eq-input" value="6" step="any"> = 0
+            </span>
+          </div>
+        </div>
+
+        <!-- System: a1x + b1y = c1, a2x + b2y = c2 -->
+        <div class="eq-form" id="eqFormSystem">
+          <div class="eq-display eq-system-display">
+            <div class="eq-row">
+              <input type="number" id="sysA1" class="eq-input" value="2" step="any"> x +
+              <input type="number" id="sysB1" class="eq-input" value="3" step="any"> y =
+              <input type="number" id="sysC1" class="eq-input" value="8" step="any">
+            </div>
+            <div class="eq-row">
+              <input type="number" id="sysA2" class="eq-input" value="1" step="any"> x +
+              <input type="number" id="sysB2" class="eq-input" value="-1" step="any"> y =
+              <input type="number" id="sysC2" class="eq-input" value="1" step="any">
+            </div>
+          </div>
+        </div>
+
+        <button class="eq-solve-btn" id="eqSolveBtn" data-i18n="eqSolveBtn">Résoudre</button>
+
+        <div class="eq-solution" id="eqSolution">
+          <h4 data-i18n="eqSolutionTitle">Solution</h4>
+          <div class="eq-steps" id="eqSteps"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Formulas Panel -->
+    <section class="tool-panel" id="panel-formulas">
+      <div class="panel-header">
+        <h2 data-i18n="formulasTitle">Aide-Mémoire Formules</h2>
+        <p class="panel-subtitle" data-i18n="formulasSubtitle">Référence rapide par niveau et sujet</p>
+      </div>
+      <div class="formulas-container" id="formulasContainer">
+        <!-- Populated by formulas.js -->
+      </div>
+    </section>
+
+    <!-- Quiz Panel -->
+    <section class="tool-panel" id="panel-quiz">
+      <div class="panel-header">
+        <h2 data-i18n="quizTitle">Quiz Mathématiques</h2>
+        <p class="panel-subtitle" data-i18n="quizSubtitle">Testez vos connaissances avec l'IA</p>
+      </div>
+      <div class="quiz-container">
+        <div class="quiz-setup" id="quizSetup">
+          <div class="quiz-config">
+            <div class="quiz-config-item">
+              <label data-i18n="quizTopicLabel">Sujet</label>
+              <select id="quizTopic">
+                <option value="general" data-i18n="quizTopicGeneral">Général</option>
+                <option value="arithmetic" data-i18n="quizTopicArith">Arithmétique</option>
+                <option value="algebra" data-i18n="quizTopicAlg">Algèbre</option>
+                <option value="geometry" data-i18n="quizTopicGeo">Géométrie</option>
+                <option value="trigonometry" data-i18n="quizTopicTrig">Trigonométrie</option>
+                <option value="calculus" data-i18n="quizTopicCalc">Calcul</option>
+                <option value="statistics" data-i18n="quizTopicStat">Statistiques</option>
+              </select>
+            </div>
+            <div class="quiz-config-item">
+              <label data-i18n="quizCountLabel">Questions</label>
+              <select id="quizCount">
+                <option value="3">3</option>
+                <option value="5" selected>5</option>
+                <option value="10">10</option>
+              </select>
+            </div>
+          </div>
+          <button class="quiz-start-btn" id="quizStartBtn" data-i18n="quizStartBtn">
+            Générer un Quiz
+          </button>
+        </div>
+        <div class="quiz-active" id="quizActive" style="display:none">
+          <div class="quiz-progress">
+            <div class="quiz-progress-bar"><div class="quiz-progress-fill" id="quizProgressFill"></div></div>
+            <span class="quiz-progress-text" id="quizProgressText">1/5</span>
+          </div>
+          <div class="quiz-question-card" id="quizQuestionCard">
+            <h3 class="quiz-question-text" id="quizQuestionText"></h3>
+            <div class="quiz-options" id="quizOptions"></div>
+            <div class="quiz-explanation" id="quizExplanation" style="display:none"></div>
+            <button class="quiz-next-btn" id="quizNextBtn" style="display:none" data-i18n="quizNextBtn">Suivant</button>
+          </div>
+        </div>
+        <div class="quiz-results" id="quizResults" style="display:none">
+          <div class="quiz-score-card">
+            <div class="quiz-score-circle" id="quizScoreCircle">
+              <span class="quiz-score-value" id="quizScoreValue">0</span>
+              <span class="quiz-score-total" id="quizScoreTotal">/5</span>
+            </div>
+            <h3 data-i18n="quizResultTitle">Résultat</h3>
+            <p class="quiz-result-message" id="quizResultMessage"></p>
+            <button class="quiz-retry-btn" id="quizRetryBtn" data-i18n="quizRetryBtn">Nouveau Quiz</button>
+          </div>
+        </div>
+        <div class="quiz-loading" id="quizLoading" style="display:none">
+          <div class="loading-spinner"></div>
+          <p data-i18n="quizLoading">Génération du quiz en cours...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Converter Panel -->
+    <section class="tool-panel" id="panel-converter">
+      <div class="panel-header">
+        <h2 data-i18n="convTitle">Convertisseur d'Unités</h2>
+        <p class="panel-subtitle" data-i18n="convSubtitle">Convertissez entre différentes unités</p>
+      </div>
+      <div class="converter-container">
+        <div class="conv-category-selector">
+          <button class="conv-cat-btn active" data-cat="length" data-i18n="convLength">Longueur</button>
+          <button class="conv-cat-btn" data-cat="mass" data-i18n="convMass">Masse</button>
+          <button class="conv-cat-btn" data-cat="temperature" data-i18n="convTemp">Température</button>
+          <button class="conv-cat-btn" data-cat="area" data-i18n="convArea">Surface</button>
+          <button class="conv-cat-btn" data-cat="volume" data-i18n="convVolume">Volume</button>
+        </div>
+        <div class="conv-form">
+          <div class="conv-input-group">
+            <input type="number" id="convFromValue" class="conv-input" value="1" step="any">
+            <select id="convFromUnit" class="conv-select"></select>
+          </div>
+          <div class="conv-swap-btn" id="convSwapBtn">⇄</div>
+          <div class="conv-input-group">
+            <input type="number" id="convToValue" class="conv-input" readonly>
+            <select id="convToUnit" class="conv-select"></select>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/i18n.js"></script>
+  <script src="js/tools.js"></script>
+  <script src="js/tools2.js"></script>
+  <script src="js/formulas.js"></script>
+  <script src="js/ai-tutor.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
