@@ -3,7 +3,13 @@
   publish = "public"
   functions = "functions"
 
-# Map all /api/* requests to the express serverless function
+# Map the chat endpoint specifically to the native streaming function
+[[redirects]]
+  from = "/api/chat"
+  to = "/.netlify/functions/chat"
+  status = 200
+
+# Map all other /api/* requests (like quiz) to the express serverless function
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/server/:splat"
