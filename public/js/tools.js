@@ -11,17 +11,24 @@ const Calculator = {
   history: '',
   historyList: [],
   init() {
-    // Load history from localStorage
-    try {
-      const saved = localStorage.getItem('mathgenius_calc_history');
-      if (saved) this.historyList = JSON.parse(saved);
-    } catch(e) { this.historyList = []; }
-
     document.querySelectorAll('.calc-btn').forEach(btn => {
       btn.addEventListener('click', () => this.handleButton(btn.dataset.action));
     });
     this.updateDisplay();
-    this.renderHistory();
+
+    // Load history from Supabase (fallback to localStorage)
+    if (typeof SupabaseStorage !== 'undefined') {
+      SupabaseStorage.loadCalcHistory().then(data => {
+        if (data) this.historyList = data;
+        else {
+          try { const s = localStorage.getItem('mathgenius_calc_history'); if (s) this.historyList = JSON.parse(s); } catch(e) {}
+        }
+        this.renderHistory();
+      });
+    } else {
+      try { const s = localStorage.getItem('mathgenius_calc_history'); if (s) this.historyList = JSON.parse(s); } catch(e) {}
+      this.renderHistory();
+    }
   },
   handleButton(action) {
     switch (action) {
@@ -52,8 +59,11 @@ const Calculator = {
       
       // Save to history list
       this.historyList.unshift({ expr: displayExpr, result: resultStr, time: Date.now() });
-      if (this.historyList.length > 20) this.historyList.pop(); // Keep max 20
-      localStorage.setItem('mathgenius_calc_history', JSON.stringify(this.historyList));
+      if (this.historyList.length > 20) this.historyList.pop();
+      
+      // Save to Supabase + localStorage fallback
+      if (typeof SupabaseStorage !== 'undefined') SupabaseStorage.saveCalcEntry(displayExpr, resultStr);
+      try { localStorage.setItem('mathgenius_calc_history', JSON.stringify(this.historyList)); } catch(e) {}
       
       this.expression = resultStr;
     } catch { this.history = 'Erreur'; this.expression = ''; }
@@ -108,6 +118,7 @@ const Calculator = {
   clearHistory() {
     this.historyList = [];
     localStorage.removeItem('mathgenius_calc_history');
+    if (typeof SupabaseStorage !== 'undefined') SupabaseStorage.clearCalcHistory();
     this.renderHistory();
   }
 };

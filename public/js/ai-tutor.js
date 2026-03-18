@@ -29,36 +29,53 @@ const AITutor = {
   },
 
   loadHistory() {
+    // Try Supabase first, fallback to localStorage
+    if (typeof SupabaseStorage !== 'undefined') {
+      SupabaseStorage.loadChatHistory().then(data => {
+        if (data && data.length > 0) {
+          this.messages = data;
+          const welcome = document.querySelector('.chat-welcome');
+          if (welcome) welcome.style.display = 'none';
+          this.messages.forEach(msg => this.appendMessage(msg.role, msg.content));
+        } else {
+          this._loadFromLocalStorage();
+        }
+      }).catch(() => this._loadFromLocalStorage());
+    } else {
+      this._loadFromLocalStorage();
+    }
+  },
+
+  _loadFromLocalStorage() {
     try {
       const saved = localStorage.getItem('mathgenius_chat_history');
       if (saved) {
         this.messages = JSON.parse(saved);
         if (this.messages.length > 0) {
-          // Hide welcome and render saved messages
           const welcome = document.querySelector('.chat-welcome');
           if (welcome) welcome.style.display = 'none';
-          this.messages.forEach(msg => {
-            this.appendMessage(msg.role, msg.content);
-          });
+          this.messages.forEach(msg => this.appendMessage(msg.role, msg.content));
         }
       }
     } catch(e) { this.messages = []; }
   },
 
-  saveHistory() {
+  saveHistory(role, content) {
+    // Save to Supabase
+    if (typeof SupabaseStorage !== 'undefined') SupabaseStorage.saveChatMessage(role, content);
+    // Also save to localStorage as fallback
     try {
-      // Keep last 50 messages to avoid filling localStorage
       const toSave = this.messages.slice(-50);
       localStorage.setItem('mathgenius_chat_history', JSON.stringify(toSave));
-    } catch(e) { /* localStorage full or unavailable */ }
+    } catch(e) {}
   },
 
   clearHistory() {
     this.messages = [];
     localStorage.removeItem('mathgenius_chat_history');
+    if (typeof SupabaseStorage !== 'undefined') SupabaseStorage.clearChatHistory();
     const container = document.getElementById('chatMessages');
     if (container) container.innerHTML = '';
-    // Show welcome again
     const welcome = document.querySelector('.chat-welcome');
     if (welcome) welcome.style.display = 'flex';
   },
@@ -74,7 +91,7 @@ const AITutor = {
 
     // Add user message
     this.messages.push({ role: 'user', content: text });
-    this.saveHistory();
+    this.saveHistory('user', text);
     this.appendMessage('user', text);
     input.value = '';
     input.style.height = 'auto';
@@ -137,7 +154,7 @@ const AITutor = {
 
       if (fullContent) {
         this.messages.push({ role: 'assistant', content: fullContent });
-        this.saveHistory();
+        this.saveHistory('assistant', fullContent);
       } else {
         if (bubbleEl) bubbleEl.textContent = 'Je n\'ai pas pu générer de réponse. Réessayez.';
       }
