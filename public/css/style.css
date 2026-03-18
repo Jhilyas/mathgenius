@@ -667,13 +667,20 @@ body {
 .graph-presets { gap: 4px; }
 
 /* =====================================================
-   RTL & RESPONSIVE
+   RTL SUPPORT
    ===================================================== */
 [dir="rtl"] .sidebar { left: auto; right: 0; box-shadow: -6px 0 20px rgba(0,0,0,0.15); }
 [dir="rtl"] .main-content { margin-left: 0; margin-right: var(--sidebar-width); }
 [dir="rtl"] .calc-expression { text-align: left; }
 
+/* =====================================================
+   RESPONSIVE — Full Multi-Device Compatibility
+   ===================================================== */
+
+/* ── TABLET LANDSCAPE ≤ 1024px — Sidebar slides off, hamburger shows ── */
 @media (max-width: 1024px) {
+  :root { --sidebar-width: 260px; }
+  
   .sidebar { transform: translateX(-100%); }
   [dir="rtl"] .sidebar { transform: translateX(100%); }
   .sidebar.open { transform: translateX(0); }
@@ -681,21 +688,246 @@ body {
   .main-content { margin-left: 0; }
   [dir="rtl"] .main-content { margin-right: 0; }
   .mobile-header { display: flex; }
-  .tool-panel { padding: 16px; }
+  
+  .tool-panel { padding: 24px 20px; }
+  .panel-header h2 { font-size: 1.7rem; }
+  
+  .quiz-container { max-width: 100%; }
+  .formulas-container { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
 }
 
-@media (max-width: 640px) {
-  .calc-buttons { gap: 6px; }
-  .calc-btn { padding: 10px 4px; font-size: 0.9rem; }
+/* ── TABLET PORTRAIT ≤ 768px — Panels reflow, sizes reduce ── */
+@media (max-width: 768px) {
+  :root { --sidebar-width: 240px; }
+  
+  .tool-panel { padding: 20px 16px; min-height: auto; }
+  .panel-header { margin-bottom: 16px; }
+  .panel-header h2 { font-size: 1.5rem; }
+  .panel-subtitle { font-size: 0.85rem; padding: 3px 10px; }
+  
+  /* Calculator */
+  .calculator-container { max-width: 340px; padding: 14px; max-height: calc(100vh - 100px); }
+  .calc-display { padding: 10px 14px; min-height: 50px; margin-bottom: 8px; }
   .calc-expression { font-size: 1.8rem; }
-  .calculator-container { padding: 14px; }
-  .formulas-container { grid-template-columns: 1fr; }
-  .chat-container { min-height: 400px; max-height: calc(100vh - 120px); }
-  .panel-header h2 { font-size: 1.6rem; }
-  .conv-input-group { flex-direction: column; }
-  .conv-form { padding: 20px; }
+  .calc-buttons { gap: 5px; }
+  .calc-btn { padding: 8px 3px; font-size: 0.9rem; }
+  .calc-btn.sci { font-size: 0.75rem; }
+  .calc-btn.zero { padding-left: 20px; }
+  .calc-history-list { max-height: 55px; }
+  
+  /* Chat */
+  .chat-container { min-height: 350px; max-height: calc(100vh - 100px); }
+  .chat-messages { padding: 16px; gap: 12px; }
+  .chat-welcome { padding: 32px 16px; }
+  .welcome-icon { font-size: 3rem; }
+  .welcome-title { font-size: 1.4rem; }
+  .quick-prompts { gap: 6px; }
+  .quick-prompt { padding: 10px 14px; font-size: 0.8rem; }
+  .chat-input-wrapper { padding: 10px 14px; }
+  .chat-input { font-size: 0.85rem; }
+  
+  /* Quiz */
+  .quiz-setup { padding: 24px; }
+  .quiz-config { gap: 14px; }
+  .quiz-question-card { padding: 22px 24px; }
+  .quiz-question-text { font-size: 1.05rem; }
+  .quiz-option { padding: 14px 18px; font-size: 0.9rem; }
+  .quiz-score-value { font-size: 3rem; }
+  
+  /* Formulas */
+  .formulas-container { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+  
+  /* Graph & Geometry */
+  .graph-input-group { gap: 8px; }
+  .graph-input-group label { font-size: 0.95rem; }
+  #graphFunctionInput { padding: 12px 14px; }
+  
+  /* Converter */
+  .conv-form { padding: 24px; }
+  .conv-input-group { gap: 10px; }
+  
+  /* Equations */
   .eq-coeff-group { font-size: 0.95rem; }
-  .eq-input { max-width: 80px; }
+  .eq-input { max-width: 90px; }
+  
+  /* Action Buttons */
+  .graph-plot-btn, .eq-solve-btn, .quiz-start-btn, .quiz-retry-btn, .quiz-next-btn {
+    padding: 14px 24px; font-size: 0.95rem;
+  }
+}
+
+/* ── LARGE PHONES ≤ 640px — Stacked layouts, further size reductions ── */
+@media (max-width: 640px) {
+  .tool-panel { padding: 16px 12px; }
+  .panel-header h2 { font-size: 1.3rem; }
+  .panel-subtitle { font-size: 0.8rem; }
+  
+  /* Calculator — compact for phone */
+  .calculator-container { max-width: 100%; padding: 12px; max-height: calc(100vh - 80px); }
+  .calc-display { padding: 8px 12px; min-height: 44px; margin-bottom: 6px; }
+  .calc-history { font-size: 0.65rem; }
+  .calc-expression { font-size: 1.6rem; }
+  .calc-buttons { gap: 4px; }
+  .calc-btn { padding: 7px 2px; font-size: 0.85rem; }
+  .calc-btn.sci { font-size: 0.7rem; }
+  .calc-btn.zero { padding-left: 16px; }
+  .calc-history-list { max-height: 45px; padding: 3px 4px; }
+  .calc-history-header { font-size: 0.6rem; padding: 2px 4px; }
+  .calc-history-item { font-size: 0.65rem; padding: 2px 4px; }
+  .calc-history-clear { font-size: 0.6rem; padding: 2px 6px; }
+  
+  /* Chat */
+  .chat-container { min-height: 300px; max-height: calc(100vh - 80px); border-radius: var(--r-md); }
+  .chat-messages { padding: 12px; gap: 10px; }
+  .chat-welcome { padding: 24px 12px; gap: 10px; }
+  .welcome-icon { font-size: 2.5rem; }
+  .welcome-title { font-size: 1.2rem; }
+  .welcome-subtitle { font-size: 0.8rem; }
+  .quick-prompts { gap: 4px; }
+  .quick-prompt { padding: 8px 12px; font-size: 0.75rem; }
+  .chat-input-wrapper { padding: 8px 12px; gap: 8px; }
+  .chat-input { font-size: 0.8rem; }
+  .send-btn { width: 38px; height: 38px; }
+  .msg-bubble { font-size: 0.85rem; padding: 10px 14px; }
+  .chat-disclaimer { font-size: 0.65rem; }
+  .chat-clear-btn { width: 28px; height: 28px; font-size: 0.8rem; }
+  
+  /* Quiz */
+  .quiz-setup { padding: 20px; }
+  .quiz-config { flex-direction: column; gap: 12px; }
+  .quiz-config-item { width: 100%; }
+  .quiz-config-item select { width: 100%; }
+  .quiz-question-card { padding: 18px 16px; }
+  .quiz-question-text { font-size: 1rem; margin-bottom: 14px; }
+  .quiz-option { padding: 12px 14px; font-size: 0.85rem; margin: 6px 0; }
+  .quiz-progress { gap: 8px; margin-bottom: 14px; }
+  .quiz-progress-text { font-size: 0.8rem; }
+  .quiz-explanation { padding: 12px; font-size: 0.85rem; }
+  .quiz-score-card { padding: 32px 20px; }
+  .quiz-score-value { font-size: 2.5rem; }
+  .quiz-score-total { font-size: 1.2rem; }
+  .quiz-result-message { font-size: 0.95rem; }
+  
+  /* Formulas */
+  .formulas-container { grid-template-columns: 1fr; gap: 12px; }
+  
+  /* Graph & Geometry — full width */
+  .graph-input-group { flex-direction: column; align-items: stretch; }
+  .graph-input-group label { font-size: 0.9rem; }
+  #graphFunctionInput { width: 100%; }
+  #graphCanvas, #geometryCanvas { max-width: 100%; height: auto !important; min-height: 250px; }
+  .geo-toolbar { gap: 4px; }
+  .geo-tool-btn { padding: 8px 12px; font-size: 0.8rem; }
+  .graph-preset { padding: 8px 12px; font-size: 0.8rem; }
+  
+  /* Converter */
+  .converter-container { max-width: 100%; }
+  .conv-form { padding: 16px; gap: 14px; }
+  .conv-input-group { flex-direction: column; }
+  .conv-swap-btn { width: 40px; height: 40px; font-size: 1.1rem; align-self: center; }
+  .conv-cat-btn { padding: 8px 12px; font-size: 0.8rem; }
+  
+  /* Equations */
+  .eq-coeff-group { font-size: 0.85rem; flex-wrap: wrap; }
+  .eq-input { max-width: 70px; padding: 10px 12px; }
+  
+  /* Shared Action Buttons */
+  .graph-plot-btn, .eq-solve-btn, .quiz-start-btn, .quiz-retry-btn, .quiz-next-btn {
+    padding: 12px 20px; font-size: 0.9rem;
+  }
+  
+  /* Language / Level Selectors */
+  .language-selector { grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .lang-btn { padding: 6px 3px; font-size: 0.7rem; }
+  
+  /* AI Status */
+  .ai-status { padding: 4px 10px; font-size: 0.8rem; }
+}
+
+/* ── SMALL PHONES ≤ 480px — Minimal padding, everything compact ── */
+@media (max-width: 480px) {
+  :root { --sidebar-width: 220px; }
+  
+  .tool-panel { padding: 12px 8px; }
+  .panel-header { margin-bottom: 12px; gap: 8px; }
+  .panel-header h2 { font-size: 1.15rem; }
+  .panel-subtitle { font-size: 0.7rem; }
+  
+  .mobile-header { padding: 8px 12px; }
+  .mobile-title { font-size: 0.95rem; }
+  .header-level-badge { padding: 3px 8px; font-size: 0.65rem; }
+  
+  /* Calculator — fit any small phone */
+  .calculator-container { padding: 8px; border-radius: var(--r-lg); max-height: calc(100vh - 60px); }
+  .calc-display { padding: 6px 10px; min-height: 40px; margin-bottom: 4px; border-width: 1px; }
+  .calc-history { font-size: 0.6rem; }
+  .calc-expression { font-size: 1.3rem; }
+  .calc-buttons { gap: 3px; }
+  .calc-btn { padding: 6px 2px; font-size: 0.78rem; }
+  .calc-btn.sci { font-size: 0.65rem; }
+  .calc-btn.zero { padding-left: 12px; }
+  .calc-history-list { max-height: 35px; margin-bottom: 4px; }
+  
+  /* Chat — full width */
+  .chat-container { border-radius: var(--r-sm); min-height: 250px; }
+  .chat-messages { padding: 8px; gap: 8px; }
+  .chat-welcome { padding: 16px 8px; }
+  .welcome-icon { font-size: 2rem; }
+  .welcome-title { font-size: 1rem; }
+  .welcome-subtitle { font-size: 0.7rem; }
+  .quick-prompts { gap: 3px; flex-direction: column; }
+  .quick-prompt { padding: 8px 10px; font-size: 0.7rem; width: 100%; text-align: center; }
+  .chat-input-wrapper { padding: 6px 10px; }
+  .msg-bubble { font-size: 0.8rem; padding: 8px 10px; }
+  
+  /* Quiz */
+  .quiz-setup { padding: 14px; }
+  .quiz-question-card { padding: 14px 12px; }
+  .quiz-question-text { font-size: 0.9rem; margin-bottom: 10px; }
+  .quiz-option { padding: 10px 12px; font-size: 0.8rem; }
+  .quiz-loading { padding: 24px; }
+  .loading-spinner { width: 36px; height: 36px; }
+  
+  /* Graph/Geometry */
+  #graphCanvas, #geometryCanvas { min-height: 200px; }
+  
+  /* Converter */
+  .conv-form { padding: 12px; gap: 10px; }
+  .conv-swap-btn { width: 34px; height: 34px; font-size: 1rem; }
+  
+  /* Level selector for very small screens */
+  .level-btn { padding: 7px 10px; font-size: 0.8rem; }
+  .tool-btn { padding: 10px; font-size: 0.82rem; }
+  .tool-icon { font-size: 1rem; }
+  
+  /* Action Buttons */
+  .graph-plot-btn, .eq-solve-btn, .quiz-start-btn, .quiz-retry-btn, .quiz-next-btn {
+    padding: 10px 16px; font-size: 0.85rem; width: 100%;
+  }
+}
+
+/* ── VERY SMALL PHONES ≤ 360px — Edge case tiny screens ── */
+@media (max-width: 360px) {
+  .panel-header h2 { font-size: 1rem; }
+  .calc-btn { font-size: 0.7rem; padding: 5px 1px; }
+  .calc-expression { font-size: 1.1rem; }
+  .calculator-container { padding: 6px; }
+  .quiz-question-text { font-size: 0.85rem; }
+  .quiz-option { padding: 8px 10px; font-size: 0.75rem; }
+  .msg-bubble { font-size: 0.75rem; }
+  .quick-prompt { font-size: 0.65rem; }
+}
+
+/* ── LANDSCAPE PHONES — Prevent overflow ── */
+@media (max-height: 500px) and (orientation: landscape) {
+  .calculator-container { max-height: calc(100vh - 50px); }
+  .calc-display { min-height: 36px; padding: 4px 8px; }
+  .calc-btn { padding: 4px 2px; font-size: 0.7rem; aspect-ratio: auto; }
+  .calc-buttons { gap: 2px; }
+  .calc-history-list { max-height: 30px; }
+  .chat-container { max-height: calc(100vh - 50px); min-height: auto; }
+  .tool-panel { padding: 8px; min-height: auto; }
+  .quiz-score-card { padding: 20px; }
 }
 
 /* =====================================================
