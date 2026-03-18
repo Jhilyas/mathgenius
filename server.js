@@ -172,7 +172,7 @@ Respond ONLY with valid JSON, no additional text. Language: ${language === 'fr' 
         'X-Title': 'MathGenius'
       },
       body: JSON.stringify({
-        model: MODEL,
+        model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'user', content: `You are a math quiz generator. Always respond with valid JSON only.\n\n${quizPrompt}` }
         ],

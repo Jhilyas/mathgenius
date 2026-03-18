@@ -121,6 +121,7 @@ const AITutor = {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let fullContent = '';
+      let buffer = '';
       const msgEl = this.appendMessage('assistant', '');
       const bubbleEl = msgEl.querySelector('.msg-bubble');
 
@@ -128,15 +129,15 @@ const AITutor = {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // Keep the last incomplete line in the buffer
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const data = line.slice(6).trim();
             if (data === '[DONE]') continue;
             try {
-              // OpenRouter sometimes sends 'data: {"id": ...' mixed with pings.
               const json = JSON.parse(data);
               const delta = json.choices?.[0]?.delta?.content || '';
               if (delta) {
@@ -144,10 +145,7 @@ const AITutor = {
                 if (bubbleEl) bubbleEl.textContent = fullContent;
                 this.scrollToBottom();
               }
-            } catch (e) { /* skip non-JSON lines or pings */ }
-          } else if (line.startsWith(':')) {
-            // OpenRouter sends SSE comments for keep-alives (e.g., ": OPENROUTER PROCESSING")
-            continue;
+            } catch (e) { /* skip partial JSON */ }
           }
         }
       }
