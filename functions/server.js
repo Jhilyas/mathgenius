@@ -9,6 +9,16 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const MODEL = 'meta-llama/llama-3.3-70b-instruct:free';
 const MAX_TOKENS = 1500;
+const QUIZ_MAX_TOKENS = 3000;
+
+// Free model fallback chain for quiz generation
+const QUIZ_MODELS = [
+  'meta-llama/llama-3.3-70b-instruct:free',
+  'google/gemma-3-27b-it:free',
+  'mistralai/mistral-small-3.1-24b-instruct:free',
+  'nvidia/nemotron-3-super-120b-a12b:free',
+  'google/gemma-3-12b-it:free'
+];
 
 app.use(express.json());
 
@@ -89,7 +99,6 @@ app.post('/api/chat', async (req, res) => {
       for await (const chunk of response.body) { res.write(chunk); }
     } catch (streamErr) {}
 
-    res.write('data: [DONE]\n\n');
     res.end();
   } catch (error) {
     if (!res.headersSent) res.status(500).json({ error: 'Internal server error' });
@@ -104,30 +113,42 @@ app.post('/api/quiz', async (req, res) => {
     const { level = 'college', topic = 'general', language = 'fr', count = 5 } = req.body;
     const quizPrompt = `Generate exactly ${count} multiple-choice math quiz questions for ${level} level students about ${topic}. Format your response as a JSON array. Each question should have: - "question": the math question text - "options": array of 4 options (strings) - "correct": index of the correct option (0-3) - "explanation": brief explanation of the correct answer. Respond ONLY with valid JSON, no additional text. Language: ${language === 'fr' ? 'French' : language === 'en' ? 'English' : language === 'ar' ? 'Arabic' : 'Spanish'}.`;
 
-    const response = await fetch(OPENROUTER_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'HTTP-Referer': process.env.APP_URL || 'http://localhost:3000',
-        'X-Title': 'MathGenius'
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [{ role: 'user', content: `You are a math quiz generator. Always respond with valid JSON only.\n\n${quizPrompt}` }],
-        max_tokens: MAX_TOKENS,
-        temperature: 0.8
-      })
-    });
+    // Try each model in fallback chain
+    let response = null;
+    for (const model of QUIZ_MODELS) {
+      response = await fetch(OPENROUTER_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+          'HTTP-Referer': process.env.APP_URL || 'http://localhost:3000',
+          'X-Title': 'MathGenius'
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [{ role: 'user', content: `You are a math quiz generator. Always respond with valid JSON only.\n\n${quizPrompt}` }],
+          max_tokens: QUIZ_MAX_TOKENS,
+          temperature: 0.8
+        })
+      });
 
-    if (!response.ok) return res.status(response.status).json({ error: 'Quiz generation failed' });
+      if (response.ok) break;
+      if (response.status === 429 || response.status === 404) continue;
+      // Other error — return it
+      return res.status(response.status).json({ error: 'Quiz generation failed' });
+    }
+
+    if (!response || !response.ok) {
+      return res.status(429).json({ error: 'All AI models are currently busy. Please retry.' });
+    }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || '[]';
     
     let quiz;
     try {
-      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      let cleaned = content.replace(/```(?:json)?\s*/gi, '').replace(/```\s*/g, '').trim();
+      const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
       quiz = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
     } catch { quiz = []; }
 
