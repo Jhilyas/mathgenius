@@ -8,7 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=2">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 </head>
 <body>
   <!-- @callstack/liquid-glass SVG Filter -->
@@ -146,11 +147,24 @@
           <h2 data-i18n="aiTutorTitle">Tuteur IA Mathématiques</h2>
           <p class="panel-subtitle" data-i18n="aiTutorSubtitle">Posez n'importe quelle question — explications pas à pas</p>
         </div>
-        <div class="ai-status">
-          <span class="status-dot"></span>
-          <span data-i18n="aiOnline">En ligne</span>
+        <div class="chat-header-actions">
+          <div class="ai-status">
+            <span class="status-dot"></span>
+            <span data-i18n="aiOnline">En ligne</span>
+          </div>
+          <button class="icon-btn" id="newChatBtn" onclick="AITutor.startNewSession()" title="Nouveau Chat">✏️</button>
+          <button class="icon-btn" id="historyToggleBtn" onclick="AITutor.toggleHistoryPanel()" title="Historique">🕒</button>
+          <button class="icon-btn" id="chatClearBtn" onclick="AITutor.clearHistory()" title="Effacer le chat actuel">🗑️</button>
         </div>
-        <button class="chat-clear-btn" id="chatClearBtn" onclick="AITutor.clearHistory()" title="Effacer l'historique">🗑️</button>
+      </div>
+      
+      <!-- Chat History Sidebar (Hidden by default) -->
+      <div class="chat-history-sidebar" id="chatHistorySidebar">
+        <div class="history-sidebar-header">
+          <h3 data-i18n="chatHistoryTitle">Historique</h3>
+          <button class="close-history-btn" onclick="AITutor.toggleHistoryPanel()">✕</button>
+        </div>
+        <div class="history-list" id="historyList"></div>
       </div>
       <div class="chat-container" id="chatContainer">
         <div class="chat-messages" id="chatMessages">
@@ -459,13 +473,14 @@
     </section>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="js/supabase-config.js"></script>
-  <script src="js/i18n.js"></script>
-  <script src="js/tools.js"></script>
-  <script src="js/tools2.js"></script>
-  <script src="js/formulas.js"></script>
-  <script src="js/ai-tutor.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/supabase-config.js?v=2"></script>
+  <script src="js/i18n.js?v=2"></script>
+  <script src="js/tools.js?v=2"></script>
+  <script src="js/tools2.js?v=2"></script>
+  <script src="js/formulas.js?v=2"></script>
+  <script src="js/ai-tutor.js?v=2"></script>
+  <script src="js/app.js?v=2"></script>
 </body>
 </html>

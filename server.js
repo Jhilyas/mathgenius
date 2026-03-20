@@ -8,8 +8,19 @@ const PORT = process.env.PORT || 3000;
 // OpenRouter API Configuration
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const MODEL = 'meta-llama/llama-3.3-70b-instruct:free';
+
+// Fallback chain: if a model is rate-limited (429) or not found (404), try the next
+const CHAT_MODELS = [
+  'meta-llama/llama-3.3-70b-instruct:free',
+  'google/gemma-3-27b-it:free',
+  'mistralai/mistral-small-3.1-24b-instruct:free',
+  'nvidia/nemotron-3-super-120b-a12b:free',
+  'stepfun/step-3.5-flash:free',
+  'google/gemma-3-12b-it:free'
+];
+const QUIZ_MODEL = 'google/gemini-2.5-flash';
 const MAX_TOKENS = 1500;
+const QUIZ_MAX_TOKENS = 3000;
 
 // ── Middleware ──
 app.use(express.json());
@@ -71,7 +82,7 @@ Respond in the student's language.`,
 Respond in the student's language.`
 };
 
-// ── Chat endpoint — streams AI responses via SSE ──
+// ── Chat endpoint — streams AI responses via SSE with model fallback ──
 app.post('/api/chat', async (req, res) => {
   if (!OPENROUTER_API_KEY) {
     return res.status(500).json({ error: 'Server misconfigured: missing API key' });
@@ -86,33 +97,48 @@ app.post('/api/chat', async (req, res) => {
 
     const systemPrompt = SYSTEM_PROMPTS[level] || SYSTEM_PROMPTS.college;
 
-    const apiMessages = messages.slice(-10);
-    if (apiMessages.length > 0 && apiMessages[0].role === 'user') {
-      apiMessages[0].content = `${systemPrompt}\n\nUser Question:\n${apiMessages[0].content}`;
-    } else if (apiMessages.length > 0) {
-      apiMessages.unshift({ role: 'user', content: systemPrompt });
-    }
+    // Build API messages with system prompt prepended (don't mutate original)
+    const apiMessages = [
+      { role: 'system', content: systemPrompt },
+      ...messages.slice(-10)
+    ];
 
-    console.log('[Chat] Request → model:', MODEL, 'level:', level);
+    // Try each model in fallback chain
+    let response = null;
+    let usedModel = '';
 
-    const response = await fetch(OPENROUTER_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-        'HTTP-Referer': process.env.APP_URL || 'http://localhost:3000',
-        'X-Title': 'MathGenius'
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: apiMessages,
-        max_tokens: MAX_TOKENS,
-        temperature: 0.7,
-        stream: true
-      })
-    });
+    for (const model of CHAT_MODELS) {
+      console.log('[Chat] Trying model:', model, 'level:', level);
 
-    if (!response.ok) {
+      response = await fetch(OPENROUTER_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+          'HTTP-Referer': process.env.APP_URL || 'http://localhost:3000',
+          'X-Title': 'MathGenius'
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: apiMessages,
+          max_tokens: MAX_TOKENS,
+          temperature: 0.7,
+          stream: true
+        })
+      });
+
+      if (response.ok) {
+        usedModel = model;
+        break; // Success — use this model
+      }
+
+      // If rate-limited (429) or model not found (404), try next model
+      if (response.status === 429 || response.status === 404) {
+        console.warn('[Chat] Model', model, 'error (' + response.status + '), trying next...');
+        continue;
+      }
+
+      // Any other error — stop and return it
       let errText = '';
       try { errText = await response.text(); } catch {}
       console.error('[Chat] API error:', response.status, errText);
@@ -122,6 +148,13 @@ app.post('/api/chat', async (req, res) => {
         details: errText 
       });
     }
+
+    if (!response || !response.ok) {
+      console.error('[Chat] All models rate-limited');
+      return res.status(429).json({ error: 'All AI models are currently busy. Please try again in a few seconds.' });
+    }
+
+    console.log('[Chat] Streaming from:', usedModel);
 
     // Stream SSE
     res.setHeader('Content-Type', 'text/event-stream');
@@ -136,7 +169,6 @@ app.post('/api/chat', async (req, res) => {
       console.error('[Chat] Stream error:', streamErr.message);
     }
 
-    res.write('data: [DONE]\n\n');
     res.end();
 
   } catch (error) {
@@ -174,11 +206,11 @@ Respond ONLY with valid JSON, no additional text. Language: ${language === 'fr' 
         'X-Title': 'MathGenius'
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: QUIZ_MODEL,
         messages: [
           { role: 'user', content: `You are a math quiz generator. Always respond with valid JSON only.\n\n${quizPrompt}` }
         ],
-        max_tokens: MAX_TOKENS,
+        max_tokens: QUIZ_MAX_TOKENS,
         temperature: 0.8
       })
     });
@@ -192,7 +224,9 @@ Respond ONLY with valid JSON, no additional text. Language: ${language === 'fr' 
     
     let quiz;
     try {
-      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      // Strip markdown code fences if present: ```json ... ```
+      let cleaned = content.replace(/```(?:json)?\s*/gi, '').replace(/```\s*/g, '').trim();
+      const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
       quiz = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
     } catch {
       quiz = [];
